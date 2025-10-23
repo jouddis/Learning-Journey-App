@@ -6,14 +6,41 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		38B067632EA6431500461943 /* LogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B067612EA6430E00461943 /* LogoView.swift */; };
+		38B067662EA7722F00461943 /* DuratinPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B067642EA7722800461943 /* DuratinPicker.swift */; };
+		38B0676D2EA78F2B00461943 /* ActivityCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B0676C2EA78F2700461943 /* ActivityCalendarView.swift */; };
+		38B0676F2EA7918900461943 /* ActivitySummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B0676E2EA7918100461943 /* ActivitySummaryView.swift */; };
+		38B067712EA791DC00461943 /* LargeActionButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B067702EA791D800461943 /* LargeActionButtonView.swift */; };
+		38B0678F2EA7F10400461943 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B067892EA7F10400461943 /* ActivityViewModel.swift */; };
+		38B0683A2EA91C4300461943 /* LogActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B068392EA91C3400461943 /* LogActionButton.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		38B066ED2EA0D5CB00461943 /* Learning Journey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Learning Journey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		38B067612EA6430E00461943 /* LogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoView.swift; sourceTree = "<group>"; };
+		38B067642EA7722800461943 /* DuratinPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuratinPicker.swift; sourceTree = "<group>"; };
+		38B0676C2EA78F2700461943 /* ActivityCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityCalendarView.swift; sourceTree = "<group>"; };
+		38B0676E2EA7918100461943 /* ActivitySummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySummaryView.swift; sourceTree = "<group>"; };
+		38B067702EA791D800461943 /* LargeActionButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeActionButtonView.swift; sourceTree = "<group>"; };
+		38B067892EA7F10400461943 /* ActivityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewModel.swift; sourceTree = "<group>"; };
+		38B068392EA91C3400461943 /* LogActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogActionButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		38B066EF2EA0D5CB00461943 /* Learning Journey */ = {
+		38B067192EA6105E00461943 /* Learning Journey */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Learning Journey";
+			sourceTree = "<group>";
+		};
+		38B068152EA8B72A00461943 /* Calendar */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Calendar;
+			sourceTree = "<group>";
+		};
+		38B0683C2EAA033100461943 /* Views */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +59,10 @@
 		38B066E42EA0D5CB00461943 = {
 			isa = PBXGroup;
 			children = (
-				38B066EF2EA0D5CB00461943 /* Learning Journey */,
+				38B068142EA8B24200461943 /* ViewModels */,
+				38B067202EA610F600461943 /* Components */,
+				38B067192EA6105E00461943 /* Learning Journey */,
+				38B0683C2EAA033100461943 /* Views */,
 				38B066EE2EA0D5CB00461943 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +73,28 @@
 				38B066ED2EA0D5CB00461943 /* Learning Journey.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		38B067202EA610F600461943 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				38B068392EA91C3400461943 /* LogActionButton.swift */,
+				38B067702EA791D800461943 /* LargeActionButtonView.swift */,
+				38B0676E2EA7918100461943 /* ActivitySummaryView.swift */,
+				38B0676C2EA78F2700461943 /* ActivityCalendarView.swift */,
+				38B067612EA6430E00461943 /* LogoView.swift */,
+				38B067642EA7722800461943 /* DuratinPicker.swift */,
+				38B068152EA8B72A00461943 /* Calendar */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		38B068142EA8B24200461943 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				38B067892EA7F10400461943 /* ActivityViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -61,7 +113,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				38B066EF2EA0D5CB00461943 /* Learning Journey */,
+				38B067192EA6105E00461943 /* Learning Journey */,
+				38B068152EA8B72A00461943 /* Calendar */,
+				38B0683C2EAA033100461943 /* Views */,
 			);
 			name = "Learning Journey";
 			packageProductDependencies = (
@@ -119,6 +173,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				38B0676F2EA7918900461943 /* ActivitySummaryView.swift in Sources */,
+				38B0683A2EA91C4300461943 /* LogActionButton.swift in Sources */,
+				38B067712EA791DC00461943 /* LargeActionButtonView.swift in Sources */,
+				38B067662EA7722F00461943 /* DuratinPicker.swift in Sources */,
+				38B067632EA6431500461943 /* LogoView.swift in Sources */,
+				38B0676D2EA78F2B00461943 /* ActivityCalendarView.swift in Sources */,
+				38B0678F2EA7F10400461943 /* ActivityViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
