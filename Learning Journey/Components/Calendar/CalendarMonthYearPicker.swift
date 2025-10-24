@@ -11,10 +11,10 @@ struct CalendarMonthYearPicker: View {
     @Binding var selectedMonth: Int
     @Binding var selectedYear: Int
     var onSelect: (Int, Int) -> Void
-
+    
     private let months = Calendar.current.monthSymbols
     private let years = Array(2000...2050)
-
+    
     // Formatter to ensure no thousands separator (e.g., 2025 not 2,025)
     private static let plainNumberFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -22,13 +22,11 @@ struct CalendarMonthYearPicker: View {
         f.numberStyle = .none
         return f
     }()
-
+    
     var body: some View {
         VStack {
-            Text("Select Month & Year")
-                .font(.headline)
-                .padding(.top)
 
+            
             HStack {
                 Picker("Month", selection: $selectedMonth) {
                     ForEach(1...12, id: \.self) { index in
@@ -36,7 +34,7 @@ struct CalendarMonthYearPicker: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-
+                
                 Picker("Year", selection: $selectedYear) {
                     ForEach(years, id: \.self) { year in
                         let yearString = CalendarMonthYearPicker.plainNumberFormatter.string(from: NSNumber(value: year)) ?? String(year)
@@ -46,16 +44,15 @@ struct CalendarMonthYearPicker: View {
                 .frame(maxWidth: .infinity)
             }
             .pickerStyle(.wheel)
-            .frame(height: 150)
-
-            Button("Done") {
-                onSelect(selectedMonth, selectedYear)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
-            .padding()
+            .frame(height: 253)
         }
-        .presentationDetents([.height(300)])
+        .onChange(of: selectedMonth) {
+            onSelect(selectedMonth, selectedYear)
+        }
+        .onChange(of: selectedYear) {
+            onSelect(selectedMonth, selectedYear)
+        }
+        .presentationDetents([.height(215)])
         .background(.ultraThinMaterial)
     }
 }

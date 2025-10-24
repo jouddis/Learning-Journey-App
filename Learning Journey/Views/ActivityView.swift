@@ -11,9 +11,8 @@ struct ActivityView: View {
     private let buttonTextStyle: Font = .custom("Helvetica-Bold", size: 36).weight(.bold)
     private let textStyle: Font = .custom("SFPro-Medium", size: 17).weight(.medium)
     
-   // @StateObject var viewModel = OnboardingViewModel()
-//    @State private var selectedDuration: String = "Week"
-//    @State private var learningTopic: String = "Swift"
+    @ObservedObject var viewModel: ActivityViewModel
+    
     var body: some View {
         ZStack {
             
@@ -58,7 +57,7 @@ struct ActivityView: View {
             
                 VStack{
                     
-                    CalendarView()
+                    CalendarView(activityViewModel: viewModel)
                 }
                 .padding(.bottom,30)
                 VStack(spacing: 20){
@@ -131,5 +130,5 @@ struct ActivityView: View {
 
 
 #Preview {
-    ActivityView()
+    ActivityView(viewModel: ActivityViewModel())
 }
