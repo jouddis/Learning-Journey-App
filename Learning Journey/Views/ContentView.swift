@@ -13,26 +13,32 @@ struct ContentView: View {
     @StateObject var viewModel: ActivityViewModel
     
     var body: some View {
-        Group {
-            // Navigation Switch based on the ViewModel's state
-            switch viewModel.currentScreen {
-            case .onboarding:
-                // Initial goal setting screen (uses the StartLearningButton)
-                OnboardingScreenView(viewModel: viewModel)
-            case .activity:
-                // Main activity tracking screen
-                ActivityMainView(viewModel: viewModel)
-            case .learningGoal:
-                // Goal update screen
-                LearningGoalView(viewModel: viewModel)
-            case .allActivities:
-                // Historical calendar
-                NavigationView {
-                    AllActivitiesView(viewModel: viewModel)
+        // Switch between the two top-level app states
+                switch viewModel.currentScreen {
+                case .onboarding:
+                    OnboardingScreenView(viewModel: viewModel)
+                    
+                case .activity:
+                    // CRITICAL: The main app content is wrapped in the NavigationStack
+                    NavigationStack(path: $viewModel.navPath) {
+                        
+                        // Set the Root View of the stack
+                        ActivityMainView(viewModel: viewModel)
+                        
+                        // Define all possible deep navigation destinations
+                        .navigationDestination(for: NavDestination.self) { destination in
+                            switch destination {
+                            case .goalUpdate:
+                                LearningGoalView(viewModel: viewModel)
+                            case .allActivities:
+                                HistoryLogView(viewModel: viewModel)
+                            }
+                        }
+                    }
+                    .tint(.white)
                 }
-            }
-        }
-        .tint(.white)
+                // LearningGoal and AllActivities are removed from the root switch
+                // because they are now destinations inside the NavigationStack.
     }
 }
  

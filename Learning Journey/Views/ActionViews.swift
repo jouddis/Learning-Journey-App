@@ -10,12 +10,13 @@ import SwiftUI
 // --- Goal Completed View (Task 3 State) ---
 struct GoalCompletedView: View {
     @ObservedObject var viewModel: ActivityViewModel
+    private let textStyle: Font = .custom("SFPro-Medium", size: 17).weight(.medium)
     
     var body: some View {
         VStack(spacing: 30) {
-            Image(systemName: "hand.raised.fill")
+            Image(systemName: "hands.clap.fill")
                 .font(.largeTitle)
-                .foregroundColor(Color("PrimaryAccent"))
+                .foregroundColor(Color(.orange))
             
             Text("Will done!")
                 .font(.largeTitle)
@@ -23,25 +24,31 @@ struct GoalCompletedView: View {
                 .foregroundColor(.white)
             
             Text("Goal completed! Start learning again or set new learning goal")
-                .font(.subheadline)
-                .foregroundColor(.white.opacity(0.7))
+                .font(.custom("SFPro-Medium", size: 18))
+                .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
             
             // Set new learning goal button
             Button("Set new learning goal") {
-                viewModel.currentScreen = .learningGoal
+                // Navigate to the goal update screen via NavigationStack
+                viewModel.goToGoalUpdate()
             }
             .padding()
-            .background(Color("PrimaryAccent"))
+            .font(textStyle)
             .foregroundColor(.white)
-            .clipShape(Capsule())
+            .frame(width: 264, height: 48)
+            .glassEffect(.clear.tint(Color(.primaryOrange)).interactive())
+            .overlay(
+                RoundedRectangle(cornerRadius: 1000)
+                    .stroke(LinearGradient(colors: [.brown, .orange, .brown, .orange, .yellow, .orange], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+            )
             
             // Set same goal button
             Button("Set same learning goal and duration") {
                 viewModel.setSameGoalAndDuration()
             }
-            .foregroundColor(.white.opacity(0.7))
-            .font(.caption)
+            .foregroundColor(.orange)
+            .font(.custom("SFPro-Medium", size: 18))
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 50)
@@ -63,3 +70,8 @@ struct LargeActionButtonView: View {
         }
     }
 }
+
+#Preview {
+    GoalCompletedView(viewModel: ActivityViewModel())
+}
+

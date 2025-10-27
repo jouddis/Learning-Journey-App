@@ -59,3 +59,6 @@ struct SummaryBox: View {
         .cornerRadius(12)
     }
 }
+#Preview {
+    ActivitySummaryView(viewModel: ActivityViewModel())
+}

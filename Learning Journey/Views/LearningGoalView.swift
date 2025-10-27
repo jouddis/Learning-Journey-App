@@ -27,38 +27,52 @@ struct LearningGoalView: View {
             
             VStack(alignment: .leading, spacing: 30) {
                 
-                Text("Learning Goal")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
+                // --- Goal/Topic Input ---
                 Text("I want to learn").foregroundColor(.white)
                 TextField("E.g., how to make Sourdough", text: $newTopic)
                     .foregroundColor(.white)
                 Rectangle().frame(height: 1).foregroundColor(.white.opacity(0.3))
 
+                // --- Duration Selection ---
                 Text("I want to learn it in a").foregroundColor(.white)
-                
-                DurationPicker(selectedDuration: $newDuration)
+                DurationPicker(selectedDuration: $newDuration) // Custom component
                 
                 Spacer()
-                
-                Button("Update Goal") {
-                    viewModel.isGoalUpdateVisible = true
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color("PrimaryAccent").opacity(0.45))
-                .foregroundColor(.white)
-                .clipShape(Capsule())
             }
             .padding(30)
+            .blur(radius: viewModel.isGoalUpdateVisible ? 5 : 0)
+            // 2. Pop-Over Alert Layer (Conditional Overlay)
+                        if viewModel.isGoalUpdateVisible {
+                            Color.black.opacity(0.4).ignoresSafeArea() // Dim the background
+                            
+                            // The custom pop-over view
+                            GoalUpdateConfirmationView(
+                                viewModel: viewModel,
+                                newTopic: newTopic,
+                                newDuration: newDuration
+                            )
+                            // Ensures the alert is centered on the screen
+                            .transition(.opacity.combined(with: .scale))
+                        }
         }
-        .sheet(isPresented: $viewModel.isGoalUpdateVisible) {
-            GoalUpdateConfirmationView(viewModel: viewModel, newTopic: newTopic, newDuration: newDuration)
+        // NavigationStack automatically provides the back button and title area
+        .navigationTitle("Learning Goal")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // Checkmark Button to confirm and pop back
+                Button {
+                    viewModel.isGoalUpdateVisible = true
+//                    viewModel.updateLearningGoalConfirmed(newTopic: newTopic, newDuration: newDuration)
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color(.orange))
+                        .font(.title2)
+                }
+            }
         }
-    }
-}
+        
+        }}
 
 // --- SUB-VIEW for Confirmation Alert (Task 4) ---
 struct GoalUpdateConfirmationView: View {
@@ -80,9 +94,13 @@ struct GoalUpdateConfirmationView: View {
                     viewModel.updateLearningGoal(newTopic: newTopic, newDuration: newDuration)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color("PrimaryAccent"))
+                .tint(Color(.primaryOrange))
             }
         }
         .padding()
     }
+}
+
+#Preview {
+    LearningGoalView(viewModel: ActivityViewModel())
 }

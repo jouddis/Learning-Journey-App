@@ -166,6 +166,7 @@ struct CalendarView: View {
         VStack(spacing: 20) {
             header
             weekDays
+//            ActivityCalendarView(viewModel: activityViewModel)
             Divider().background(.white.opacity(0.3))
             metricsSection
         }
@@ -219,6 +220,23 @@ struct CalendarView: View {
             ForEach(viewModel.weekDates, id: \.self) { date in
                 let day = Calendar.current.component(.day, from: date)
                 let isToday = Calendar.current.isDateInToday(date)
+                let dayStatus = activityViewModel.calendarDays.first { calendarDay in
+                                // Match the day number OR check if it's the current logging day
+                                calendarDay.day == day
+                            }?.status ?? .default
+                
+                
+                let FillColor: Color = {
+                                if dayStatus == .logged {
+                                    return Color(.orange.opacity(0.28))
+                                } else if dayStatus == .freezed {
+                                    return Color(.primaryBlue.opacity(0.28))
+                                } else if isToday {
+                                    return Color.orange
+                                } else {
+                                    return .white.opacity(-1/100)
+                                }
+                            }()
                 
                 VStack {
                     Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
@@ -228,14 +246,19 @@ struct CalendarView: View {
                         .font(.custom("SFPro-Regular", size: 20))
                         .frame(width: 44, height: 44)
                         .background(
-                            Circle()
-                                .fill(isToday ? Color.orange : Color.gray.opacity(1/100))
+                            ZStack {
+                                Circle()
+                                    .fill(FillColor)
+                            }
                         )
-                        .foregroundColor(.white)
+                        .foregroundColor(dayStatus == .logged ? .orange :
+                                            dayStatus == .freezed ? .primaryBlue : .white)
                 }
             }
         }
     }
+    
+    
 
     private var metricsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -244,10 +267,10 @@ struct CalendarView: View {
                 .foregroundColor(.white)
             HStack(spacing: 30) {
                 // Uses metrics from the local CalendarViewModel
-                metricBox(icon: "flame.fill", value: "\(viewModel.daysLearned)", label: "Days Learned", iconColor: .orange,
-                          backgroundColor: .orange)
-                metricBox(icon: "cube.fill", value: "\(viewModel.daysFreezed)", label: "Day Freezed", iconColor: Color("PrimaryBlue"),
-                          backgroundColor: Color("PrimaryBlue"))
+                metricBox(icon: "flame.fill", value: "\(activityViewModel.daysLearned)", label: "Days Learned", iconColor: .orange,
+                                          backgroundColor: .orange)
+                metricBox(icon: "cube.fill", value: "\(activityViewModel.daysFreezed)", label: "Day Freezed", iconColor: Color(.primaryBlue),
+                          backgroundColor: Color(.primaryBlue))
             }
         }
     }
@@ -268,4 +291,8 @@ struct CalendarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 34))
         .foregroundColor(.white)
     }
+}
+
+#Preview {
+    CalendarView(activityViewModel: ActivityViewModel())
 }

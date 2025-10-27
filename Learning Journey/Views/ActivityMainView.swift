@@ -17,9 +17,15 @@ struct ActivityMainView: View {
             Color.black.edgesIgnoringSafeArea(.all)
             
             VStack(alignment: .leading) {
+                // TESTING CONTROLS - Remove this section when done testing
+              //                DateSimulatorView(progress: viewModel)
+              //                    .padding(.top, 20)
+              //                // END TESTING CONTROLS
+              //
+              //                Spacer()
                 
                 // --- Top Header Bar (Activity Title, Calendar, Goal) ---
-                HStack(alignment: .top){
+                HStack(alignment: .top ){
                     Text("Activity")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -28,7 +34,7 @@ struct ActivityMainView: View {
                     Spacer()
                     
                     // Button to open All Activities (Task 5)
-                    Button(action: { viewModel.currentScreen = .allActivities }) {
+                    Button(action:viewModel.goToAllActivities) {
                         Image(systemName: "calendar")
                             .font(.title2)
                             .foregroundColor(.white)
@@ -38,7 +44,7 @@ struct ActivityMainView: View {
                     }
                     
                     // Button to open Goal Update (Task 4)
-                    Button(action: { viewModel.currentScreen = .learningGoal }) {
+                    Button(action: viewModel.goToGoalUpdate) {
                         Image(systemName: "pencil.and.outline")
                             .font(.title2)
                             .foregroundColor(.white)
@@ -47,15 +53,15 @@ struct ActivityMainView: View {
                             .clipShape(Circle())
                     }
                 }
-                .padding(.horizontal, 30)
+                .padding(.horizontal, 45)
                 .padding(.top, 40)
                 .padding(.bottom, 19)
                 
                 // --- Calendar and Metrics (Combined Component) ---
                 HStack {
-                    Spacer()
+                    
                     CalendarView(activityViewModel: viewModel)
-                    Spacer()
+                   
                 }
                 .padding(.horizontal, 30)
                 .padding(.bottom, 30)
@@ -77,7 +83,7 @@ struct ActivityMainView: View {
                                     .font(buttonTextStyle)
                                     .foregroundColor(mainButtonTextColor(for: viewModel.currentDayStatus))
                                     .frame(width: 250, height: 250)
-                                    .glassEffect(.clear.tint(Color("PrimaryOrange")).interactive())
+                                    .glassEffect(.clear.tint(Color(mainButtonColor(for: viewModel.currentDayStatus))).interactive())
                             }
                             .disabled(viewModel.isLogAsLearnedDisabled)
 
@@ -91,7 +97,7 @@ struct ActivityMainView: View {
                             .padding(.horizontal, 30)
                             .frame(width: 274, height: 48)
                             .background(
-                                RoundedRectangle(cornerRadius: 1000).fill(Color("TealAccent"))
+                                RoundedRectangle(cornerRadius: 1000).fill(Color(.freeze))
                             )
                             .glassEffect()
                             .foregroundColor(.white)
@@ -102,7 +108,7 @@ struct ActivityMainView: View {
                             // Freeze Status Text
                             Text("\(viewModel.freezesUsed) out of \(viewModel.availableFreezes) Freezes used")
                                 .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundColor(.secondaryText)
                                 .padding(.bottom, 14)
                         }
                     }
@@ -114,22 +120,36 @@ struct ActivityMainView: View {
                 Spacer()
             }
         }
+        .navigationBarHidden(true)
+                // To ensure the back button is hidden on the root view (ActivityMainView)
+                .navigationBarBackButtonHidden(true)
         .onAppear {
             // 🚀 CRITICAL: Check for streak loss every time the view loads
             viewModel.checkInactivityForStreakLoss()
+            
         }
+       
     }
+        
         
     // Dynamic Button Helpers
     private func mainButtonColor(for status: DayStatus) -> Color {
         switch status {
-        case .default, .logged: return Color("PrimaryAccent").opacity(0.8)
-        case .freezed: return Color("TealAccent").opacity(0.8)
+        case .default: return Color(.primaryOrange)
+        case .logged: return Color(.primaryOrange).opacity(25/100)
+        case .freezed: return Color(.freeze).opacity(2/100)
         }
     }
     
     private func mainButtonTextColor(for status: DayStatus) -> Color {
-        return status == .logged ? Color.black : Color.white
+        switch status {
+        case .logged:
+            return .orange
+        case .freezed:
+            return Color(.primaryBlue)
+        case .default:
+            return .white
+        }
     }
     
     private func mainButtonText(for status: DayStatus) -> String {
@@ -140,3 +160,7 @@ struct ActivityMainView: View {
         }
     }
 }
+#Preview {
+    ActivityMainView(viewModel: ActivityViewModel())
+}
+

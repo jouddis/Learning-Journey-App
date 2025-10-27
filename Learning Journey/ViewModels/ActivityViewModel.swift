@@ -9,29 +9,25 @@ import Foundation
 import Combine
 import SwiftUI // Required for day status/color logic
 
-// MARK: - Utility Structures & Enums (Model Layer)
-struct CalendarDay: Identifiable {
-    let id = UUID()
-    let day: Int
-    var isCurrent: Bool = false
-    var status: DayStatus = .default
-}
 
-enum DayStatus {
-    case `default`
-    case logged
-    case freezed
+
+enum NavDestination: Hashable {
+    case goalUpdate
+    case allActivities
 }
 
 enum AppScreen {
-    case onboarding // Initial goal setting screen
+    case onboarding
     case activity
-    case learningGoal
-    case allActivities
+    // Note: .learningGoal and .allActivities are now NavDestinations,
+    // but AppScreen still manages the initial app launch state.
 }
 
 // MARK: - ViewModel Implementation
 class ActivityViewModel: ObservableObject {
+    
+    // 🚀 ADDITION 1: Simulated Date for Testing
+//        @Published var simulatedDate: Date = Date()
     
     // --- Navigation & Goal State ---
     @Published var currentScreen: AppScreen = .onboarding // Starts on the onboarding screen
@@ -41,8 +37,8 @@ class ActivityViewModel: ObservableObject {
     @Published var isGoalCompleted: Bool = false
 
     // --- Activity/Logging Data ---
-    @Published var daysLearned: Int = 0
-    @Published var daysFreezed: Int = 0
+//    @Published var daysLearned: Int = 0
+//    @Published var daysFreezed: Int = 0
     @Published var availableFreezes: Int = 2
     @Published var freezesUsed: Int = 0
     @Published var currentMonth: String = "October 2025"
@@ -56,6 +52,13 @@ class ActivityViewModel: ObservableObject {
     // 🚀 NEW: Tracks the date the current DayStatus (.logged or .freezed) was set.
         // This is distinct from lastActivityDate (which tracks streak continuity).
         @Published var currentStatusSetDate: Date? = nil
+    
+    
+    
+    // 🚀 CRITICAL: NavigationStack Path
+        @Published var navPath = [NavDestination]()
+    
+    
     
     // --- Month/Year Picker State for AllActivitiesView ---
     @Published var isMonthYearPickerVisible: Bool = false
@@ -75,12 +78,27 @@ class ActivityViewModel: ObservableObject {
         CalendarDay(day: 26)
     ]
     
-    @Published var historicalCalendar: [String: [CalendarDay]] = [
-        "November 2025": [CalendarDay(day: 1, status: .default), CalendarDay(day: 7, status: .logged)],
-        "October 2025": [CalendarDay(day: 1, status: .logged), CalendarDay(day: 13, status: .freezed), CalendarDay(day: 20, status: .logged)],
-        "September 2025": [CalendarDay(day: 2, status: .logged), CalendarDay(day: 10, status: .logged), CalendarDay(day: 22, status: .freezed)],
-        "January 2025": [CalendarDay(day: 6, status: .logged), CalendarDay(day: 13, status: .freezed), CalendarDay(day: 21, status: .logged)]
-    ]
+    
+    // 🚀 CRITICAL: The Historical Data Model (renamed)
+    @Published var activityHistory = ActivityHistory()
+    
+    // Metrics are now COMPUTED properties based on the history model
+    var daysLearned: Int {
+        return activityHistory.loggedDates.values.filter { $0 == Color("PrimaryAccent") }.count
+//        activityHistory.learnedCount
+    }
+        
+    var daysFreezed: Int {
+        return activityHistory.loggedDates.values.filter { $0 == Color("TealAccent") }.count
+//        activityHistory.freezedCount
+    }
+    
+//    @Published var historicalCalendar: [String: [CalendarDay]] = [
+//        "November 2025": [CalendarDay(day: 1, status: .default), CalendarDay(day: 7, status: .logged)],
+//        "October 2025": [CalendarDay(day: 1, status: .logged), CalendarDay(day: 13, status: .freezed), CalendarDay(day: 20, status: .logged)],
+//        "September 2025": [CalendarDay(day: 2, status: .logged), CalendarDay(day: 10, status: .logged), CalendarDay(day: 22, status: .freezed)],
+//        "January 2025": [CalendarDay(day: 6, status: .logged), CalendarDay(day: 13, status: .freezed), CalendarDay(day: 21, status: .logged)]
+//    ]
 
     // MARK: - Business Logic & Computed Properties
     
@@ -91,8 +109,8 @@ class ActivityViewModel: ObservableObject {
             print("🚨 Streak Reset Triggered!")
             
             // Reset all streak-related metrics to zero
-            daysLearned = 0
-            daysFreezed = 0
+//            daysLearned = 0
+//            daysFreezed = 0
             freezesUsed = 0
             
             // Reset the current day status
@@ -119,6 +137,15 @@ class ActivityViewModel: ObservableObject {
             }
         }
         
+    
+    
+    func goToAllActivities() {
+            navPath.append(.allActivities)
+        }
+
+        func goToGoalUpdate() {
+            navPath.append(.goalUpdate)
+        }
         // 2. Override the goal update logic to recalculate freezes immediately
         func updateLearningGoal(newTopic: String, newDuration: String) {
             
@@ -128,8 +155,8 @@ class ActivityViewModel: ObservableObject {
 
 
             // Reset streak/metrics
-            daysLearned = 0
-            daysFreezed = 0
+//            daysLearned = 0
+//            daysFreezed = 0
             freezesUsed = 0
             currentDayStatus = .default
             
@@ -142,7 +169,9 @@ class ActivityViewModel: ObservableObject {
 
             isGoalUpdateVisible = false
             isGoalCompleted = false
-            currentScreen = .activity
+//            currentScreen = .activity
+            // CRITICAL: Pop back to the root of the stack (ActivityMainView)
+                    navPath.removeAll()
         }
     
     // 2. Reset due to Inactivity (Needs a check function)
@@ -166,48 +195,69 @@ class ActivityViewModel: ObservableObject {
     // Onboarding Button Action
     // 3. Update the startLearning logic for the initial setup
         func startLearning() {
+            currentScreen = .activity
             // Recalculate based on the initial duration set in the OnboardingView
             self.availableFreezes = calculateAvailableFreezes(duration: self.currentGoalDuration)
-            currentScreen = .activity // Move to the main app screen
+            /*currentScreen = .activity*/ // Move to the main app screen
         }
 
     func logDayAsLearned() {
         guard !isLogAsLearnedDisabled else { return }
         
-        daysLearned += 1
+//        daysLearned += 1
         currentDayStatus = .logged
         self.lastActivityDate = Date() // Update timestamp! 🚀
         self.currentStatusSetDate = Date() // 🚀 CRITICAL: Set the timestamp for the current status
-        if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
-            calendarDays[index].status = .logged
-        }
+        
+        // 🚀 CRITICAL: Update the ActivityHistory model
+            activityHistory.logActivity(on: Date(), status: .logged)
+        
         if daysLearned >= 5 { self.isGoalCompleted = true }
+        
+        if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
+            var tempDays = calendarDays
+                    tempDays[index].status = .logged
+                    calendarDays = tempDays
+        }
     }
     
     func logDayAsFreezed() {
         guard !isLogAsFreezedDisabled else { return }
         
-        daysFreezed += 1
+//        daysFreezed += 1
         freezesUsed += 1
         currentDayStatus = .freezed
         self.lastActivityDate = Date() // Update timestamp! 🚀
         self.currentStatusSetDate = Date() // 🚀 CRITICAL: Set the timestamp for the current status
-        if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
-            // Create a copy of the calendarDays array
-                    var tempDays = calendarDays
-            // Modify the element in the copy
-                    tempDays[index].status = .freezed
-            
-            // 2. 🚀 CRITICAL FIX: Assign the modified array (tempDays) back to the @Published property
-                    // This assignment explicitly tells the UI: "The entire calendarDays property changed, please refresh!"
-                    calendarDays = tempDays
-//            calendarDays[index].status = .freezed
-        }
+        
+        // 🚀 CRITICAL: Update the ActivityHistory model
+            activityHistory.logActivity(on: Date(), status: .freezed)
+        
+        // Clean-up for the current day status tracker:
+            if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
+                var tempDays = calendarDays
+                tempDays[index].status = .freezed
+                calendarDays = tempDays
+            }
     }
+    
+    
+    // ⚠️ Update the status lookup function to use the new Model
+        func getStatus(for date: Date) -> DayStatus {
+            if let color = activityHistory.colorForDate(date) {
+                if color == Color("PrimaryAccent") { return .logged }
+                if color == Color("TealAccent") { return .freezed }
+            }
+            return .default
+        }
     
     func setSameGoalAndDuration() {
         isGoalCompleted = false
-        daysLearned = 0
+//        daysLearned = 0
+        // NOTE: The effective "reset" of the learned days count occurs automatically
+            // when you start the next goal period, as the history moves into the past.
+            // If you need to CLEAR the current day's status:
+            currentDayStatus = .default
     }
     
 //    func updateLearningGoal(newTopic: String, newDuration: String) {
@@ -250,7 +300,36 @@ class ActivityViewModel: ObservableObject {
             // Buttons are enabled if the current day's start is LATER than the day the status was set.
             return startOfToday > startOfSetDay
         }
+    // Testing feature - simulate different days
+    var simulatedDate: Date? = nil  // Set this to test different dates
     
+    private let calendar1 = Calendar.current
+
+    // MARK: - Testing Helpers
     
+    // Move to next day (for testing)
+    func advanceToNextDay() {
+        if let simulated = simulatedDate {
+            simulatedDate = calendar1.date(byAdding: .day, value: 1, to: simulated)
+        } else {
+            simulatedDate = calendar1.date(byAdding: .day, value: 1, to: Date())
+        }
+    }
+    
+    // Move to previous day (for testing)
+    func goToPreviousDay() {
+        if let simulated = simulatedDate {
+            simulatedDate = calendar1.date(byAdding: .day, value: -1, to: simulated)
+        } else {
+            simulatedDate = calendar1.date(byAdding: .day, value: -1, to: Date())
+        }
+    }
+    
+    // Reset to real current date
+    func resetToRealDate() {
+        simulatedDate = nil
+    }
 }
+    
+    
 
