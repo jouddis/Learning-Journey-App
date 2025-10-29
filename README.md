@@ -6,9 +6,9 @@ This project was developed as a solution for the Apple Developer Academy's chall
 
 **Learning Journey** empowers learners to build daily habits around a topic they care about and track their progress in a clear, rewarding way.  
 Built exclusively for iOS 26, it embraces Apple’s new **Liquid Glass** design language—where interface elements adopt translucency, softness, and clarity—to create a modern, polished, and highly functional tracking tool.  
-<img width="590" height="1278" alt="IMG_0301" src="https://github.com/user-attachments/assets/def76c4a-7e9d-42d3-9b50-a4cf12390b2f" />
-<img width="590" height="1278" alt="IMG_0303" src="https://github.com/user-attachments/assets/30dfeb1a-6277-4a18-ac30-e5ab6949ef92" />
-<img width="590" height="1278" alt="IMG_0304" src="https://github.com/user-attachments/assets/22aab766-28ea-481f-a287-881b56bf49a6" />
+<img width="197" height="426" alt="onboarding" src="https://github.com/user-attachments/assets/def76c4a-7e9d-42d3-9b50-a4cf12390b2f" />
+<img width="590" height="1278" alt="activity" src="https://github.com/user-attachments/assets/30dfeb1a-6277-4a18-ac30-e5ab6949ef92" />
+<img width="315" height="620" alt="calendarhistory" src="https://github.com/user-attachments/assets/22aab766-28ea-481f-a287-881b56bf49a6" />
 
 
 ## **📈 Features and Functionality**
