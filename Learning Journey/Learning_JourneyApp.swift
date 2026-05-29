@@ -29,7 +29,7 @@ struct LearningJourneyApp: App {
         vm.modelContext = modelContainer.mainContext
         _viewModel = StateObject(wrappedValue: vm)
         
-        // 🚀 CRITICAL: Restore session from SwiftData on app launch
+        
         vm.restoreSessionIfExists()
     }
     

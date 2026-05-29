@@ -5,29 +5,28 @@
 //  Created by Joud Almashgari on 24/10/2025.
 //
 
+
 import SwiftUI
 
 struct ActivityMainView: View {
     @ObservedObject var viewModel: ActivityViewModel
-    
-    private let buttonTextStyle: Font = .custom("Helvetica-Bold", size: 36).weight(.bold)
-    
+
     var body: some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
-            
+
             VStack(alignment: .leading) {
 
-                HStack(alignment: .top ){
+                // --- Top Bar ---
+                HStack(alignment: .top) {
                     Text("Activity")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                    
+
                     Spacer()
-                    
-                    // Button to open All Activities (Task 5)
-                    Button(action:viewModel.goToAllActivities) {
+
+                    Button(action: viewModel.goToAllActivities) {
                         Image(systemName: "calendar")
                             .font(.title2)
                             .foregroundColor(.white)
@@ -35,8 +34,7 @@ struct ActivityMainView: View {
                             .glassEffect()
                             .clipShape(Circle())
                     }
-                    
-                    // Button to open Goal Update (Task 4)
+
                     Button(action: viewModel.goToGoalUpdate) {
                         Image(systemName: "pencil.and.outline")
                             .font(.title2)
@@ -49,59 +47,28 @@ struct ActivityMainView: View {
                 .padding(.horizontal, 45)
                 .padding(.top, 40)
                 .padding(.bottom, 19)
-                
-                // --- Calendar and Metrics (Combined Component) ---
+
+                // --- Calendar Card ---
                 HStack {
-                    
                     CalendarView(activityViewModel: viewModel)
-                   
                 }
                 .padding(.horizontal, 30)
                 .padding(.bottom, 30)
-                
+
                 Spacer()
-                
-                // --- Conditional Action Area (Task 3 & 2) ---
+
+                // --- Action Area ---
                 HStack {
                     Spacer()
-                    VStack(spacing: 20){
+                    VStack(spacing: 20) {
                         if viewModel.isGoalCompleted {
-                            GoalCompletedView(viewModel: viewModel)
+                            GoalCompletedView(viewModel: viewModel).padding(.bottom,24)
                         } else {
-                            // Large Action Button
-                            Button {
-                                viewModel.logDayAsLearned()
-                            } label: {
-                                Text(mainButtonText(for: viewModel.currentDayStatus))
-                                    .font(buttonTextStyle)
-                                    .foregroundColor(mainButtonTextColor(for: viewModel.currentDayStatus))
-                                    .frame(width: 250, height: 250)
-                                    .glassEffect(.clear.tint(Color(mainButtonColor(for: viewModel.currentDayStatus))).interactive())
-                            }
-                            .disabled(viewModel.isLogAsLearnedDisabled)
-
-                            // Freeze Button
-                            Button {
-                                viewModel.logDayAsFreezed()
-                            } label: {
-                                Text("Log as Freezed")
-                            }
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 30)
-                            .frame(width: 274, height: 48)
-                            .background(
-                                RoundedRectangle(cornerRadius: 1000).fill(Color(.freeze))
-                            )
-                            .glassEffect()
-                            .foregroundColor(.white)
-                            .font(.subheadline)
-                            .opacity(viewModel.isLogAsFreezedDisabled ? 0.3 : 1.0)
-                            .disabled(viewModel.isLogAsFreezedDisabled)
                             
-                            // Freeze Status Text
-                            Text("\(viewModel.freezesUsed) out of \(viewModel.availableFreezes) Freezes used")
-                                .font(.caption)
-                                .foregroundColor(.secondaryText)
+                            LogActionButton(viewModel: viewModel)
+
+                        
+                            FreezeButton(viewModel: viewModel)
                                 .padding(.bottom, 14)
                         }
                     }
@@ -109,52 +76,18 @@ struct ActivityMainView: View {
                     .ignoresSafeArea(.keyboard, edges: .bottom)
                     Spacer()
                 }
-                
+
                 Spacer()
             }
         }
         .navigationBarHidden(true)
-                // To ensure the back button is hidden on the root view (ActivityMainView)
-                .navigationBarBackButtonHidden(true)
+        .navigationBarBackButtonHidden(true)
         .onAppear {
-            
             viewModel.checkInactivityForStreakLoss()
-
-            
-        }
-       
-    }
-        
-        
-    // Dynamic Button Helpers
-    private func mainButtonColor(for status: DayStatus) -> Color {
-        switch status {
-        case .default: return Color(.primaryOrange)
-        case .logged: return Color(.primaryOrange).opacity(10/100)
-        case .freezed: return Color(.freeze).opacity(1/100)
-        }
-    }
-    
-    private func mainButtonTextColor(for status: DayStatus) -> Color {
-        switch status {
-        case .logged:
-            return .orange
-        case .freezed:
-            return Color(.teal)
-        case .default:
-            return .white
-        }
-    }
-    
-    private func mainButtonText(for status: DayStatus) -> String {
-        switch status {
-        case .logged: return "Learned Today"
-        case .freezed: return "Day \nFreezed"
-        case .default: return "Log as Learned"
         }
     }
 }
+
 #Preview {
     ActivityMainView(viewModel: ActivityViewModel())
 }
-

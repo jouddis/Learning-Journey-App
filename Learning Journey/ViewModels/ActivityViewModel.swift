@@ -1,11 +1,4 @@
 //
-//  OnboardingViewModel.swift
-//  Learning Journey
-//
-//  Created by Joud Almashgari on 21/10/2025.
-//
-//
-//
 //  ActivityViewModel.swift
 //  Learning Journey
 //

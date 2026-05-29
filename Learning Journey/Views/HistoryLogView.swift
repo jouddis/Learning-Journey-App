@@ -1,5 +1,5 @@
 //
-//  AllActivityView.swift
+//  HistoryLogView.swift
 //  Learning Journey
 //
 //  Created by Joud Almashgari on 24/10/2025.
@@ -8,26 +8,36 @@ import SwiftUI
 
 struct HistoryLogView: View {
     @ObservedObject var viewModel: ActivityViewModel
-    
+
     var activityHistory: ActivityHistory { viewModel.activityHistory }
 
     private let calendar = Calendar(identifier: .gregorian)
     private let months: [Date]
 
-    init(viewModel: ActivityViewModel,
-         from start: Date = Calendar(identifier: .gregorian)
-             .date(byAdding: .year, value: -1, to: Date())!,
-         to end: Date = Calendar(identifier: .gregorian)
-             .date(byAdding: .year, value: 10, to: Date())!
-    ) {
+    init(viewModel: ActivityViewModel) {
         self.viewModel = viewModel
-        self.months = HistoryLogView.buildMonths(from: start, to: end)
+
+        // Start from January of the year the user first joined.
+        // Falls back to the current year if no session exists yet.
+        let joinYear: Int = {
+            if let startDate = viewModel.currentSession?.startDate {
+                return Calendar.current.component(.year, from: startDate)
+            }
+            return Calendar.current.component(.year, from: Date())
+        }()
+
+        let cal = Calendar(identifier: .gregorian)
+        let januaryOfJoinYear = cal.date(from: DateComponents(year: joinYear, month: 1, day: 1))!
+
+        // End at the current month — calendar grows naturally as time passes.
+        // No future months are shown.
+        self.months = HistoryLogView.buildMonths(from: januaryOfJoinYear, to: Date())
     }
 
     private static func buildMonths(from start: Date, to end: Date) -> [Date] {
         let cal = Calendar(identifier: .gregorian)
         let startMonth = cal.date(from: cal.dateComponents([.year, .month], from: start))!
-        let endMonth = cal.date(from: cal.dateComponents([.year, .month], from: end))!
+        let endMonth   = cal.date(from: cal.dateComponents([.year, .month], from: end))!
         var cursor = startMonth
         var result: [Date] = []
         while cursor <= endMonth {
@@ -49,9 +59,11 @@ struct HistoryLogView: View {
                 }
                 .padding(.vertical, 12)
             }
-            // 🚀 CRITICAL: Scroll to current month on view appear
             .onAppear {
-                let currentMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+                // Always open scrolled to the current month
+                let currentMonth = Calendar.current.date(
+                    from: Calendar.current.dateComponents([.year, .month], from: Date())
+                )!
                 withAnimation {
                     proxy.scrollTo(currentMonth, anchor: .top)
                 }
@@ -64,11 +76,12 @@ struct HistoryLogView: View {
     }
 }
 
-// 🚀 Renamed the sub-struct
+// MARK: - Month Section
+
 private struct MonthLogSection: View {
     let month: Date
     var history: ActivityHistory
-    
+
     private let cal = Calendar(identifier: .gregorian)
 
     private var headerTitle: String {
@@ -81,22 +94,20 @@ private struct MonthLogSection: View {
     private let weekdayHeaders = ["SUN","MON","TUE","WED","THU","FRI","SAT"]
 
     private var dayCells: [(day: Int?, date: Date?)] {
-        let firstOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: month))!
-        let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
-        let weekdayIndex = cal.component(.weekday, from: firstOfMonth)
-        let leadingBlanks = weekdayIndex - 1
+        let firstOfMonth  = cal.date(from: cal.dateComponents([.year, .month], from: month))!
+        let daysInMonth   = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
+        let leadingBlanks = cal.component(.weekday, from: firstOfMonth) - 1
 
         var cells: [(day: Int?, date: Date?)] = []
-        
-        for _ in 0..<leadingBlanks { cells.append((day: nil, date: nil)) }
+        for _ in 0..<leadingBlanks { cells.append((nil, nil)) }
         for day in 1...daysInMonth {
             if let date = cal.date(bySetting: .day, value: day, of: firstOfMonth) {
-                cells.append((day: day, date: date))
+                cells.append((day, date))
             }
         }
         let remainder = cells.count % 7
         if remainder != 0 {
-            for _ in 0..<(7 - remainder) { cells.append((day: nil, date: nil)) }
+            for _ in 0..<(7 - remainder) { cells.append((nil, nil)) }
         }
         return cells
     }
@@ -122,17 +133,25 @@ private struct MonthLogSection: View {
                     ZStack {
                         if let day = cell.day, let date = cell.date {
                             if let color = history.colorForDate(date) {
-                                Circle().fill(color).frame(width: 32, height: 32)
-                                Text("\(day)").font(.system(size: 16, weight: .semibold)).foregroundStyle(.black)
+                                // Logged or frozen — circle matches CalendarView's 44pt size
+                                let isLogged = color == history.loggedColor
+                                Circle().fill(color).frame(width: 44, height: 44)
+                                Text("\(day)")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(isLogged ? Color.orange : Color(.primaryBlue))
+                            } else if Calendar.current.isDateInToday(date) {
+                                // Today — orange circle, matching CalendarView
+                                Circle().fill(Color.orange).frame(width: 44, height: 44)
+                                Text("\(day)").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                             } else {
                                 Text("\(day)").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity, minHeight: 32)
+                                    .frame(maxWidth: .infinity, minHeight: 44)
                             }
                         } else {
-                            Text(" ").frame(maxWidth: .infinity, minHeight: 32)
+                            Text(" ").frame(maxWidth: .infinity, minHeight: 44)
                         }
                     }
-                    .frame(height: 32)
+                    .frame(height: 44)
                 }
             }
 

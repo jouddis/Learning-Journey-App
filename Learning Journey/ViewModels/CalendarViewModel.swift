@@ -17,7 +17,7 @@ final class CalendarViewModel: ObservableObject {
     private var calendar = Calendar.current
     private var timer: AnyCancellable?
 
-    // ✅ Initialize with today's month/year
+    
     init() {
         let now = Date()
         let components = calendar.dateComponents([.month, .year], from: now)
@@ -76,7 +76,7 @@ final class CalendarViewModel: ObservableObject {
         displayedYear = components.year ?? displayedYear
     }
     
-    // 🚀 NEW: Jump to current month (call this when view appears)
+    
     func jumpToCurrentMonth() {
         let now = Date()
         let components = calendar.dateComponents([.month, .year], from: now)
