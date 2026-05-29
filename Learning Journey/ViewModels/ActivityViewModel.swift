@@ -5,6 +5,13 @@
 //  Created by Joud Almashgari on 21/10/2025.
 //
 //
+//
+//  ActivityViewModel.swift
+//  Learning Journey
+//
+//  Created by Joud Almashgari on 21/10/2025.
+//
+
 import Foundation
 import Combine
 import SwiftUI
@@ -57,12 +64,11 @@ class ActivityViewModel: ObservableObject {
         guard let context = modelContext else { return }
         
         do {
-            // Fetch all learning sessions (should ideally have just one active)
             let descriptor = FetchDescriptor<LearningSession>()
             let sessions = try context.fetch(descriptor)
             
             if let existingSession = sessions.last {
-                // Session exists! Restore it
+                // Session exists — restore all state
                 self.currentSession = existingSession
                 self.currentGoalTopic = existingSession.topic
                 self.currentGoalDuration = existingSession.duration
@@ -75,10 +81,18 @@ class ActivityViewModel: ObservableObject {
                 // Load calendar marks from UserDefaults
                 activityHistory.refresh()
                 
-                // 🚀 CRITICAL: Set screen to activity (not onboarding)
+                // FIX 2: Restore currentDayStatus so button text is correct after relaunch
+                // Without this, the button would say "Log as Learned" even if today was already logged
+                if CalendarMarksManager.isTodayLogged() {
+                    self.currentDayStatus = CalendarMarksManager.getStatus(for: Date())
+                } else {
+                    self.currentDayStatus = .default
+                }
+                
+                // Navigate to activity screen
                 self.currentScreen = .activity
             } else {
-                // No session exists, stay on onboarding
+                // No session yet — stay on onboarding
                 self.currentScreen = .onboarding
             }
         } catch {
@@ -89,15 +103,10 @@ class ActivityViewModel: ObservableObject {
     
     // MARK: - Button State Logic
     
-    /// Can log as learned if:
-    /// - Day hasn't been logged yet (either learned or freezed)
     var isLogAsLearnedDisabled: Bool {
         return CalendarMarksManager.isTodayLogged()
     }
     
-    /// Can log as freezed if:
-    /// - Day hasn't been logged yet
-    /// - AND freezes remaining > 0
     var isLogAsFreezedDisabled: Bool {
         let freezesRemaining = availableFreezes - freezesUsed
         return CalendarMarksManager.isTodayLogged() || freezesRemaining <= 0
@@ -113,7 +122,6 @@ class ActivityViewModel: ObservableObject {
         let thirtyTwoHours: TimeInterval = 32 * 60 * 60
         
         if timeElapsed > thirtyTwoHours {
-            // Streak is lost
             session.streakDaysCount = 0
             saveSession()
         }
@@ -123,12 +131,10 @@ class ActivityViewModel: ObservableObject {
     
     var hasDayReset: Bool {
         let today = Calendar.current.startOfDay(for: Date())
-        
         if let lastLogged = lastActivityDate {
             let lastLoggedDay = Calendar.current.startOfDay(for: lastLogged)
             return today > lastLoggedDay
         }
-        
         return true
     }
     
@@ -141,17 +147,14 @@ class ActivityViewModel: ObservableObject {
         let today = Date()
         let normalizedToday = Calendar.current.startOfDay(for: today)
         
-        // Mark in UserDefaults
         CalendarMarksManager.logDay(normalizedToday)
         
-        // Update session
         session.streakDaysCount += 1
         session.lastLoggedDate = today
         lastActivityDate = today
         streakCount = session.streakDaysCount
         currentDayStatus = .logged
         
-        // Check if goal completed
         if session.isGoalCompleted {
             isGoalCompleted = true
         }
@@ -167,17 +170,13 @@ class ActivityViewModel: ObservableObject {
         let today = Date()
         let normalizedToday = Calendar.current.startOfDay(for: today)
         
-        // Mark in UserDefaults
         CalendarMarksManager.freezeDay(normalizedToday)
         
-        // Update session
         session.freezesUsedCount += 1
         session.lastLoggedDate = today
         freezesUsed = session.freezesUsedCount
         lastActivityDate = today
         currentDayStatus = .freezed
-        
-        // Note: Streak does NOT increment for freeze
         
         saveSession()
         updateActivityHistory()
@@ -198,7 +197,6 @@ class ActivityViewModel: ObservableObject {
         currentDayStatus = .default
         isGoalCompleted = false
         
-        // Save to SwiftData
         if let context = modelContext {
             context.insert(newSession)
             try? context.save()
@@ -210,7 +208,6 @@ class ActivityViewModel: ObservableObject {
     func updateLearningGoal(newTopic: String, newDuration: String) {
         guard let session = currentSession else { return }
         
-        // Reset everything for new goal
         session.topic = newTopic
         session.duration = newDuration
         session.startDate = Date()
@@ -227,8 +224,8 @@ class ActivityViewModel: ObservableObject {
         currentDayStatus = .default
         isGoalCompleted = false
         
-        // Clear all calendar marks
         CalendarMarksManager.clearAllMarks()
+        activityHistory.clearAllMarks()
         
         saveSession()
         isGoalUpdateVisible = false
@@ -236,19 +233,26 @@ class ActivityViewModel: ObservableObject {
     }
     
     func setSameGoalAndDuration() {
-        isGoalCompleted = false
+        guard let session = currentSession else { return }
+
+        // Reset streak in SwiftData too, not just UI state
+        session.streakDaysCount = 0
+        session.freezesUsedCount = 0
+        session.lastLoggedDate = nil
+
+        streakCount = 0
+        freezesUsed = 0
+        lastActivityDate = nil
         currentDayStatus = .default
+        isGoalCompleted = false
+
+        saveSession()
     }
     
     // MARK: - Navigation
     
-    func goToAllActivities() {
-        navPath.append(.allActivities)
-    }
-    
-    func goToGoalUpdate() {
-        navPath.append(.goalUpdate)
-    }
+    func goToAllActivities() { navPath.append(.allActivities) }
+    func goToGoalUpdate()    { navPath.append(.goalUpdate) }
     
     // MARK: - Helper Methods
     
@@ -257,41 +261,33 @@ class ActivityViewModel: ObservableObject {
     }
     
     private func updateActivityHistory() {
-        // Update the ActivityHistory object from UserDefaults
         var loggedDates: [Date: Color] = [:]
         
-        let loggedSet = CalendarMarksManager.getLoggedDates()
-        for timestamp in loggedSet {
-            let date = Date(timeIntervalSince1970: timestamp)
-            loggedDates[date] = activityHistory.loggedColor
+        for timestamp in CalendarMarksManager.getLoggedDates() {
+            loggedDates[Date(timeIntervalSince1970: timestamp)] = activityHistory.loggedColor
         }
-        
-        let freezedSet = CalendarMarksManager.getFreezedDates()
-        for timestamp in freezedSet {
-            let date = Date(timeIntervalSince1970: timestamp)
-            loggedDates[date] = activityHistory.freezedColor
+        for timestamp in CalendarMarksManager.getFreezedDates() {
+            loggedDates[Date(timeIntervalSince1970: timestamp)] = activityHistory.freezedColor
         }
         
         activityHistory.loggedDates = loggedDates
     }
     
     private func saveSession() {
-        if let context = modelContext, let session = currentSession {
-            try? context.save()
-        }
+        try? modelContext?.save()
     }
     
-    // For testing: simulate different dates
+    // MARK: - Date Simulator (for testing)
     var simulatedDate: Date? = nil
     
     func advanceToNextDay() {
-        let baseDate = simulatedDate ?? Date()
-        simulatedDate = Calendar.current.date(byAdding: .day, value: 1, to: baseDate)
+        let base = simulatedDate ?? Date()
+        simulatedDate = Calendar.current.date(byAdding: .day, value: 1, to: base)
     }
     
     func goToPreviousDay() {
-        let baseDate = simulatedDate ?? Date()
-        simulatedDate = Calendar.current.date(byAdding: .day, value: -1, to: baseDate)
+        let base = simulatedDate ?? Date()
+        simulatedDate = Calendar.current.date(byAdding: .day, value: -1, to: base)
     }
     
     func resetToRealDate() {
