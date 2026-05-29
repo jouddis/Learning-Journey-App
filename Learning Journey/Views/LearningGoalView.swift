@@ -64,9 +64,10 @@ struct LearningGoalView: View {
                 Button {
                     viewModel.isGoalUpdateVisible = true
 //                    viewModel.updateLearningGoalConfirmed(newTopic: newTopic, newDuration: newDuration)
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(.orange))
+                }
+                label: {
+                    Image(systemName: "checkmark")
+                        .foregroundColor(Color(.white))
                         .font(.title2)
                 }
             }

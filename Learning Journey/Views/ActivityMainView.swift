@@ -17,14 +17,7 @@ struct ActivityMainView: View {
             Color.black.edgesIgnoringSafeArea(.all)
             
             VStack(alignment: .leading) {
-                // TESTING CONTROLS - Remove this section when done testing
-              //                DateSimulatorView(progress: viewModel)
-              //                    .padding(.top, 20)
-              //                // END TESTING CONTROLS
-              //
-              //                Spacer()
-                
-                // --- Top Header Bar (Activity Title, Calendar, Goal) ---
+
                 HStack(alignment: .top ){
                     Text("Activity")
                         .font(.largeTitle)
@@ -136,8 +129,8 @@ struct ActivityMainView: View {
     private func mainButtonColor(for status: DayStatus) -> Color {
         switch status {
         case .default: return Color(.primaryOrange)
-        case .logged: return Color(.primaryOrange).opacity(25/100)
-        case .freezed: return Color(.freeze).opacity(2/100)
+        case .logged: return Color(.primaryOrange).opacity(10/100)
+        case .freezed: return Color(.freeze).opacity(1/100)
         }
     }
     
@@ -146,7 +139,7 @@ struct ActivityMainView: View {
         case .logged:
             return .orange
         case .freezed:
-            return Color(.primaryBlue)
+            return Color(.teal)
         case .default:
             return .white
         }
@@ -155,7 +148,7 @@ struct ActivityMainView: View {
     private func mainButtonText(for status: DayStatus) -> String {
         switch status {
         case .logged: return "Learned Today"
-        case .freezed: return "Day Freezed"
+        case .freezed: return "Day \nFreezed"
         case .default: return "Log as Learned"
         }
     }
