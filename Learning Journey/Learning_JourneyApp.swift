@@ -5,18 +5,38 @@
 //  Created by Joud Almashgari on 16/10/2025.
 //
 
-
 import SwiftUI
+import SwiftData
 
 @main
-struct LearningApp: App {
-    // 1. Initialize the ActivityViewModel once for the entire app lifecycle
-    @StateObject var viewModel = ActivityViewModel()
+struct LearningJourneyApp: App {
+    let modelContainer: ModelContainer
+    @StateObject var viewModel: ActivityViewModel
+    
+    init() {
+        // Setup SwiftData
+        let schema = Schema([LearningSession.self])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        do {
+            self.modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not initialize ModelContainer: \(error)")
+        }
+        
+        // Initialize ViewModel
+        let vm = ActivityViewModel()
+        vm.modelContext = modelContainer.mainContext
+        _viewModel = StateObject(wrappedValue: vm)
+        
+        // 🚀 CRITICAL: Restore session from SwiftData on app launch
+        vm.restoreSessionIfExists()
+    }
     
     var body: some Scene {
         WindowGroup {
-            // 2. The ContentView acts as the Root Navigator
             ContentView(viewModel: viewModel)
         }
+        .modelContainer(modelContainer)
     }
 }

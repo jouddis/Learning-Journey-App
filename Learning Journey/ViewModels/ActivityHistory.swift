@@ -4,56 +4,75 @@
 //
 //  Created by Joud Almashgari on 26/10/2025.
 //
-
-import SwiftUI
 import Foundation
 import Combine
-
+import SwiftUI
 
 final class ActivityHistory: ObservableObject {
     private let calendar = Calendar.current
     
-    // Key: Date, Value: Color (or DayStatus)
     @Published var loggedDates: [Date: Color] = [:]
     
-    
-    public let loggedColor = Color(.orange.opacity(0.28))
-    public let freezedColor = Color(.primaryBlue.opacity(0.28))
+    // Color definitions
+    let loggedColor = Color(.orange.opacity(0.28))
+    let freezedColor = Color(.primaryBlue.opacity(0.28))
     
     init() {
-
-        let now = Date()
-//
+        loadFromUserDefaults()
     }
     
-    // Log activity to the historical record
-    func logActivity(on date: Date, status: DayStatus) {
-        let startOfDay = calendar.startOfDay(for: date)
+    // Load calendar marks from UserDefaults
+    private func loadFromUserDefaults() {
+        var tempDates: [Date: Color] = [:]
         
-        // 1. Create a mutable copy of the dictionary
-        var tempDates = loggedDates
-        
-        // 2. Perform the mutation on the copy
-        switch status {
-        case .logged:
-            tempDates[startOfDay] = loggedColor
-        case .freezed:
-            tempDates[startOfDay] = freezedColor
-        case .default:
-            tempDates.removeValue(forKey: startOfDay)
+        // Load logged dates
+        let loggedSet = CalendarMarksManager.getLoggedDates()
+        for timestamp in loggedSet {
+            let date = Date(timeIntervalSince1970: timestamp)
+            tempDates[date] = loggedColor
         }
         
-        // 3. 🚀 CRITICAL: Reassign the entire dictionary back to the @Published property
+        // Load freezed dates
+        let freezedSet = CalendarMarksManager.getFreezedDates()
+        for timestamp in freezedSet {
+            let date = Date(timeIntervalSince1970: timestamp)
+            tempDates[date] = freezedColor
+        }
+        
+        self.loggedDates = tempDates
+    }
+    
+    // Refresh from UserDefaults
+    func refresh() {
+        loadFromUserDefaults()
+    }
+    
+    // Get color for a specific date
+    func colorForDate(_ date: Date) -> Color? {
+        let normalized = calendar.startOfDay(for: date)
+        return loggedDates[normalized]
+    }
+    
+    // Log activity (also updates UserDefaults via CalendarMarksManager)
+    func logActivity(on date: Date, status: DayStatus) {
+        let normalized = calendar.startOfDay(for: date)
+        var tempDates = loggedDates
+        
+        switch status {
+        case .logged:
+            tempDates[normalized] = loggedColor
+            CalendarMarksManager.logDay(normalized)
+        case .freezed:
+            tempDates[normalized] = freezedColor
+            CalendarMarksManager.freezeDay(normalized)
+        case .default:
+            tempDates.removeValue(forKey: normalized)
+        }
+        
         loggedDates = tempDates
     }
     
-    // Function required by MonthLogSection for styling
-    func colorForDate(_ date: Date) -> Color? {
-        let startOfDay = calendar.startOfDay(for: date)
-        return loggedDates[startOfDay]
-    }
-    
-    // MARK: - Read-only accessors for metrics (used by ActivityViewModel)
+    // Metrics
     var learnedCount: Int {
         loggedDates.values.filter { $0 == loggedColor }.count
     }
@@ -64,5 +83,11 @@ final class ActivityHistory: ObservableObject {
     
     var allLoggedDatesSnapshot: [Date: Color] {
         loggedDates
+    }
+    
+    // Clear all
+    func clearAllMarks() {
+        loggedDates.removeAll()
+        CalendarMarksManager.clearAllMarks()
     }
 }

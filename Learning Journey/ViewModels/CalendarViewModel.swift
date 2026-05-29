@@ -4,31 +4,23 @@
 //
 //  Created by Joud Almashgari on 22/10/2025.
 //
-
 import Foundation
 import Combine
 import SwiftUI
 
 final class CalendarViewModel: ObservableObject {
-    // CRITICAL CHANGE: Only keep the main ActivityViewModel reference.
-    private let activityViewModel: ActivityViewModel
-    
-    @Published var currentDate: Date
-    @Published var displayedMonth: Int
-    @Published var displayedYear: Int
+    // CRITICAL CHANGE: Initialize with current date
+    @Published var currentDate: Date = Date()
+    @Published var displayedMonth: Int = Calendar.current.component(.month, from: Date())
+    @Published var displayedYear: Int = Calendar.current.component(.year, from: Date())
     
     private var calendar = Calendar.current
     private var timer: AnyCancellable?
 
-    // REMOVED: daysLearned and daysFreezed properties were removed as they are redundant.
-    
-    init(activityViewModel: ActivityViewModel) {
-        self.activityViewModel = activityViewModel // Store the reference
-        
+    // ✅ Initialize with today's month/year
+    init() {
         let now = Date()
-        let calendar = Calendar.current
         let components = calendar.dateComponents([.month, .year], from: now)
-        
         self.displayedMonth = components.month ?? 1
         self.displayedYear = components.year ?? 2025
         self.currentDate = now
@@ -42,7 +34,6 @@ final class CalendarViewModel: ObservableObject {
             .sink { [weak self] _ in
                 guard let self else { return }
                 self.currentDate = Date()
-                // Optional: You might want to call activityViewModel.checkInactivityForStreakLoss() here
             }
     }
 
@@ -83,5 +74,14 @@ final class CalendarViewModel: ObservableObject {
         let components = calendar.dateComponents([.month, .year], from: currentDate)
         displayedMonth = components.month ?? displayedMonth
         displayedYear = components.year ?? displayedYear
+    }
+    
+    // 🚀 NEW: Jump to current month (call this when view appears)
+    func jumpToCurrentMonth() {
+        let now = Date()
+        let components = calendar.dateComponents([.month, .year], from: now)
+        self.displayedMonth = components.month ?? 1
+        self.displayedYear = components.year ?? 2025
+        self.currentDate = now
     }
 }

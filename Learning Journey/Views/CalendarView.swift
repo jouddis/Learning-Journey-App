@@ -12,7 +12,7 @@ struct CalendarView: View {
     @ObservedObject var activityViewModel: ActivityViewModel
     
     // Local ViewModel manages all date logic
-    @ObservedObject private var viewModel: CalendarViewModel
+    @StateObject private var viewModel: CalendarViewModel
     
     @State private var showMonthPicker = false
     
@@ -20,9 +20,7 @@ struct CalendarView: View {
         self.activityViewModel = activityViewModel
         
         // Initialize the CalendarViewModel with the correct signature
-        _viewModel = ObservedObject(wrappedValue: CalendarViewModel(
-            activityViewModel: activityViewModel
-        ))
+        _viewModel = StateObject(wrappedValue: CalendarViewModel())
     }
 
     var body: some View {
@@ -152,3 +150,4 @@ struct CalendarView: View {
         .foregroundColor(.white)
     }
 }
+

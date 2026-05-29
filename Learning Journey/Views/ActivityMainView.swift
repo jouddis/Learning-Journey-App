@@ -117,8 +117,9 @@ struct ActivityMainView: View {
                 // To ensure the back button is hidden on the root view (ActivityMainView)
                 .navigationBarBackButtonHidden(true)
         .onAppear {
-            // 🚀 CRITICAL: Check for streak loss every time the view loads
+            
             viewModel.checkInactivityForStreakLoss()
+
             
         }
        

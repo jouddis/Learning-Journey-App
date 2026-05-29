@@ -4,16 +4,11 @@
 //
 //  Created by Joud Almashgari on 24/10/2025.
 //
-
-
-
 import SwiftUI
 
 struct HistoryLogView: View {
-    // 🚀 Uses ActivityViewModel (the root)
     @ObservedObject var viewModel: ActivityViewModel
     
-    // Renamed local reference
     var activityHistory: ActivityHistory { viewModel.activityHistory }
 
     private let calendar = Calendar(identifier: .gregorian)
@@ -26,7 +21,6 @@ struct HistoryLogView: View {
              .date(byAdding: .year, value: 10, to: Date())!
     ) {
         self.viewModel = viewModel
-        // Use a static method (no change needed here)
         self.months = HistoryLogView.buildMonths(from: start, to: end)
     }
 
@@ -48,7 +42,6 @@ struct HistoryLogView: View {
             ScrollView {
                 LazyVStack(spacing: 24) {
                     ForEach(months, id: \.self) { month in
-                        // 🚀 Use the new MonthLogSection and pass the history model
                         MonthLogSection(month: month, history: activityHistory)
                             .padding(.horizontal, 16)
                             .id(month)
@@ -56,7 +49,13 @@ struct HistoryLogView: View {
                 }
                 .padding(.vertical, 12)
             }
-            // ... (onAppear scroll logic remains the same) ...
+            // 🚀 CRITICAL: Scroll to current month on view appear
+            .onAppear {
+                let currentMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+                withAnimation {
+                    proxy.scrollTo(currentMonth, anchor: .top)
+                }
+            }
         }
         .navigationTitle("All activities")
         .navigationBarTitleDisplayMode(.inline)
@@ -68,7 +67,7 @@ struct HistoryLogView: View {
 // 🚀 Renamed the sub-struct
 private struct MonthLogSection: View {
     let month: Date
-    var history: ActivityHistory // Use the concrete ActivityHistory type
+    var history: ActivityHistory
     
     private let cal = Calendar(identifier: .gregorian)
 
@@ -82,7 +81,6 @@ private struct MonthLogSection: View {
     private let weekdayHeaders = ["SUN","MON","TUE","WED","THU","FRI","SAT"]
 
     private var dayCells: [(day: Int?, date: Date?)] {
-        // ... (Date calculation logic remains the same) ...
         let firstOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: month))!
         let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
         let weekdayIndex = cal.component(.weekday, from: firstOfMonth)
@@ -123,7 +121,6 @@ private struct MonthLogSection: View {
                 ForEach(Array(dayCells.enumerated()), id: \.offset) { _, cell in
                     ZStack {
                         if let day = cell.day, let date = cell.date {
-                            // 🚀 Use history.colorForDate() for lookup
                             if let color = history.colorForDate(date) {
                                 Circle().fill(color).frame(width: 32, height: 32)
                                 Text("\(day)").font(.system(size: 16, weight: .semibold)).foregroundStyle(.black)
@@ -141,7 +138,6 @@ private struct MonthLogSection: View {
 
             Divider().background(Color.gray.opacity(0.9)).padding(.top, 6)
         }
-        
     }
 }
 

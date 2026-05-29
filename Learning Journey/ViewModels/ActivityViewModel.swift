@@ -5,236 +5,234 @@
 //  Created by Joud Almashgari on 21/10/2025.
 //
 //
-
 import Foundation
 import Combine
-import SwiftUI // Required for day status/color logic
+import SwiftUI
+import SwiftData
 
-enum NavDestination: Hashable {
-    case goalUpdate
-    case allActivities
-}
-
-enum AppScreen {
-    case onboarding
-    case activity
-}
-
-// MARK: - ViewModel Implementation
 class ActivityViewModel: ObservableObject {
+    // MARK: - SwiftData Integration
+    @Published var currentSession: LearningSession?
+    var modelContext: ModelContext?
     
-    // ⚠️ CRITICAL FIX: The robust Combine pattern is in place.
-    var activityHistory: ActivityHistory
-    private var historySubscription: AnyCancellable?
-    
-    // 🚀 CRITICAL NEW PROPERTY
-    var currentDayIsClean: Bool = true // Assume no log has happened today
-    
-    // --- Navigation & Goal State ---
+    // MARK: - UI State
     @Published var currentScreen: AppScreen = .onboarding
-    @Published var isGoalUpdateVisible: Bool = false
-    @Published var currentGoalTopic: String = "Swift"
-    @Published var currentGoalDuration: String = "Month"
-    @Published var isGoalCompleted: Bool = false
-
-    // --- Activity/Logging Data ---
-    @Published var availableFreezes: Int = 2
-    @Published var freezesUsed: Int = 0
-    @Published var currentMonth: String = "October 2025"
-    @Published var currentDayStatus: DayStatus = .default
-    @Published var lastActivityDate: Date = Date()
-    
-    private let inactivityThreshold: TimeInterval = 32 * 60 * 60
-    @Published var currentStatusSetDate: Date? = nil
-    
-    // 🚀 CRITICAL: NavigationStack Path
     @Published var navPath = [NavDestination]()
+    @Published var isGoalUpdateVisible: Bool = false
+    @Published var isGoalCompleted: Bool = false
     
-    // --- Month/Year Picker State for AllActivitiesView ---
-    @Published var isMonthYearPickerVisible: Bool = false
-    @Published var selectedPickerMonth: Int = Calendar.current.component(.month, from: Date())
-    @Published var selectedPickerYear: Int = Calendar.current.component(.year, from: Date())
+    // MARK: - Goal State
+    @Published var currentGoalTopic: String = "Swift"
+    @Published var currentGoalDuration: String = "Week"
     
-    let durationOptions = ["Week", "Month", "Year"]
-
-    // Mock data for calendar days (should be populated dynamically in a real app)
-    @Published var calendarDays: [CalendarDay] = [
-        CalendarDay(day: 20, status: .logged),
-        CalendarDay(day: 21, isCurrent: true, status: .default),
-        CalendarDay(day: 22),
-        CalendarDay(day: 23),
-        CalendarDay(day: 24, status: .logged),
-        CalendarDay(day: 25, status: .freezed),
-        CalendarDay(day: 26)
-    ]
+    // MARK: - Activity State
+    @Published var currentDayStatus: DayStatus = .default
+    @Published var calendarDays: [CalendarDay] = []
     
-    // 🚀 FINAL FIX: Use the Model's dedicated accessors for reliable metric counts.
+    // MARK: - Tracking
+    @Published var lastActivityDate: Date? = nil
+    @Published var streakCount: Int = 0
+    @Published var freezesUsed: Int = 0
+    @Published var availableFreezes: Int = 2
+    
+    // MARK: - Metrics (Computed from UserDefaults)
     var daysLearned: Int {
-        return activityHistory.learnedCount
+        CalendarMarksManager.countLearnedDays()
     }
-        
+    
     var daysFreezed: Int {
-        return activityHistory.freezedCount
+        CalendarMarksManager.countFreezedDays()
     }
     
-    // MARK: - Initialization and Subscription
+    // MARK: - Activity History (for UI reference)
+    @Published var activityHistory: ActivityHistory
     
+    // MARK: - Initialization
     init() {
-        // 1. Initialize the Model instance
         self.activityHistory = ActivityHistory()
-            
-        // 2. Set initial state
-        self.availableFreezes = calculateAvailableFreezes(duration: self.currentGoalDuration)
-            
+    }
+    
+    // MARK: - 🚀 CRITICAL: Restore Session on App Launch
+    func restoreSessionIfExists() {
+        guard let context = modelContext else { return }
         
-        self.currentStatusSetDate = nil // Ensure 12 AM reset logic is immediately true
-            self.currentDayStatus = .default // Ensure button state is default
-        // 3. 🚀 CRITICAL: Manually subscribe to the Model's objectWillChange publisher.
-        historySubscription = activityHistory.objectWillChange
-            .sink { [weak self] _ in
-                // Forward the notification to all observers of the ActivityViewModel
-                self?.objectWillChange.send()
+        do {
+            // Fetch all learning sessions (should ideally have just one active)
+            let descriptor = FetchDescriptor<LearningSession>()
+            let sessions = try context.fetch(descriptor)
+            
+            if let existingSession = sessions.last {
+                // Session exists! Restore it
+                self.currentSession = existingSession
+                self.currentGoalTopic = existingSession.topic
+                self.currentGoalDuration = existingSession.duration
+                self.availableFreezes = existingSession.freezeLimit
+                self.freezesUsed = existingSession.freezesUsedCount
+                self.streakCount = existingSession.streakDaysCount
+                self.lastActivityDate = existingSession.lastLoggedDate
+                self.isGoalCompleted = existingSession.isGoalCompleted
+                
+                // Load calendar marks from UserDefaults
+                activityHistory.refresh()
+                
+                // 🚀 CRITICAL: Set screen to activity (not onboarding)
+                self.currentScreen = .activity
+            } else {
+                // No session exists, stay on onboarding
+                self.currentScreen = .onboarding
             }
-    }
-    
-    deinit {
-        historySubscription?.cancel()
-    }
-    
-    // MARK: - Business Logic & Computed Properties
-    
-    func resetStreak() {
-        print("🚨 Streak Reset Triggered!")
-        
-        freezesUsed = 0
-        currentDayStatus = .default
-        
-        // Reset the current day status
-    
-        
-        // CRITICAL FIX: Reset the current status date so the system knows the day is NOT logged/freezed.
-        self.currentStatusSetDate = nil
-    }
-    
-    private func calculateAvailableFreezes(duration: String) -> Int {
-        switch duration {
-        case "Week":
-            return 2
-        case "Month":
-            return 8
-        case "Year":
-            return 96
-        default:
-            return 0
+        } catch {
+            print("Error restoring session: \(error)")
+            self.currentScreen = .onboarding
         }
     }
     
-    func goToAllActivities() {
-        navPath.append(.allActivities)
+    // MARK: - Button State Logic
+    
+    /// Can log as learned if:
+    /// - Day hasn't been logged yet (either learned or freezed)
+    var isLogAsLearnedDisabled: Bool {
+        return CalendarMarksManager.isTodayLogged()
     }
-
-    func goToGoalUpdate() {
-        navPath.append(.goalUpdate)
+    
+    /// Can log as freezed if:
+    /// - Day hasn't been logged yet
+    /// - AND freezes remaining > 0
+    var isLogAsFreezedDisabled: Bool {
+        let freezesRemaining = availableFreezes - freezesUsed
+        return CalendarMarksManager.isTodayLogged() || freezesRemaining <= 0
+    }
+    
+    // MARK: - Streak Loss Logic (32+ hours)
+    
+    func checkInactivityForStreakLoss() {
+        guard let lastDate = lastActivityDate else { return }
+        guard let session = currentSession else { return }
+        
+        let timeElapsed = Date().timeIntervalSince(lastDate)
+        let thirtyTwoHours: TimeInterval = 32 * 60 * 60
+        
+        if timeElapsed > thirtyTwoHours {
+            // Streak is lost
+            session.streakDaysCount = 0
+            saveSession()
+        }
+    }
+    
+    // MARK: - Daily Reset Logic (12 AM)
+    
+    var hasDayReset: Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        if let lastLogged = lastActivityDate {
+            let lastLoggedDay = Calendar.current.startOfDay(for: lastLogged)
+            return today > lastLoggedDay
+        }
+        
+        return true
+    }
+    
+    // MARK: - Logging Actions
+    
+    func logDayAsLearned() {
+        guard !isLogAsLearnedDisabled else { return }
+        guard let session = currentSession else { return }
+        
+        let today = Date()
+        let normalizedToday = Calendar.current.startOfDay(for: today)
+        
+        // Mark in UserDefaults
+        CalendarMarksManager.logDay(normalizedToday)
+        
+        // Update session
+        session.streakDaysCount += 1
+        session.lastLoggedDate = today
+        lastActivityDate = today
+        streakCount = session.streakDaysCount
+        currentDayStatus = .logged
+        
+        // Check if goal completed
+        if session.isGoalCompleted {
+            isGoalCompleted = true
+        }
+        
+        saveSession()
+        updateActivityHistory()
+    }
+    
+    func logDayAsFreezed() {
+        guard !isLogAsFreezedDisabled else { return }
+        guard let session = currentSession else { return }
+        
+        let today = Date()
+        let normalizedToday = Calendar.current.startOfDay(for: today)
+        
+        // Mark in UserDefaults
+        CalendarMarksManager.freezeDay(normalizedToday)
+        
+        // Update session
+        session.freezesUsedCount += 1
+        session.lastLoggedDate = today
+        freezesUsed = session.freezesUsedCount
+        lastActivityDate = today
+        currentDayStatus = .freezed
+        
+        // Note: Streak does NOT increment for freeze
+        
+        saveSession()
+        updateActivityHistory()
+    }
+    
+    // MARK: - Goal Management
+    
+    func startLearning() {
+        let newSession = LearningSession(
+            topic: currentGoalTopic,
+            duration: currentGoalDuration
+        )
+        currentSession = newSession
+        availableFreezes = newSession.freezeLimit
+        freezesUsed = 0
+        streakCount = 0
+        lastActivityDate = nil
+        currentDayStatus = .default
+        isGoalCompleted = false
+        
+        // Save to SwiftData
+        if let context = modelContext {
+            context.insert(newSession)
+            try? context.save()
+        }
+        
+        currentScreen = .activity
     }
     
     func updateLearningGoal(newTopic: String, newDuration: String) {
+        guard let session = currentSession else { return }
         
-        // CRITICAL: Reset the streak when the goal changes
-        resetStreak()
-
-        freezesUsed = 0
-        currentDayStatus = .default
+        // Reset everything for new goal
+        session.topic = newTopic
+        session.duration = newDuration
+        session.startDate = Date()
+        session.streakDaysCount = 0
+        session.freezesUsedCount = 0
+        session.lastLoggedDate = nil
         
-        // Update the goal properties
         currentGoalTopic = newTopic
         currentGoalDuration = newDuration
-        
-        // 🚀 CRITICAL UPDATE: Recalculate and set availableFreezes
-        self.availableFreezes = calculateAvailableFreezes(duration: newDuration)
-
-        isGoalUpdateVisible = false
+        availableFreezes = session.freezeLimit
+        freezesUsed = 0
+        streakCount = 0
+        lastActivityDate = nil
+        currentDayStatus = .default
         isGoalCompleted = false
         
-        // CRITICAL: Pop back to the root of the stack (ActivityMainView)
+        // Clear all calendar marks
+        CalendarMarksManager.clearAllMarks()
+        
+        saveSession()
+        isGoalUpdateVisible = false
         navPath.removeAll()
-    }
-    
-    func checkInactivityForStreakLoss() {
-        let timeElapsed = Date().timeIntervalSince(lastActivityDate)
-        
-        if timeElapsed > inactivityThreshold {
-            resetStreak()
-        }
-    }
-    
-    var isLogAsLearnedDisabled: Bool {
-        return !hasDayReset || currentDayStatus != .default
-    }
-    
-    var isLogAsFreezedDisabled: Bool {
-        return !hasDayReset || freezesUsed >= availableFreezes
-    }
-    
-    func startLearning() {
-        currentScreen = .activity
-        // Recalculate based on the initial duration set in the OnboardingView
-        self.availableFreezes = calculateAvailableFreezes(duration: self.currentGoalDuration)
-    }
-
-    func logDayAsLearned() {
-        guard !isLogAsLearnedDisabled else { return }
-        
-        // 1. Update Time States (CRITICAL for 32hr reset and 12AM reset)
-        self.lastActivityDate = Date()
-        self.currentStatusSetDate = Date()
-        
-        // 2. Set the UI Status
-        currentDayStatus = .logged
-        
-        // 3. Update the Model (Metrics update automatically)
-        activityHistory.logActivity(on: Date(), status: .logged)
-        
-        // 4. Logic for goal completion
-        if daysLearned >= 5 { self.isGoalCompleted = true }
-        
-        // 5. UI Mock Update (Forces current week calendar view to show new color)
-        if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
-            var tempDays = calendarDays
-            tempDays[index].status = .logged
-            calendarDays = tempDays
-        }
-    }
-     
-    func logDayAsFreezed() {
-        guard !isLogAsFreezedDisabled else { return }
-        
-        // 1. Update Consumable Resource
-        freezesUsed += 1
-        
-        // 2. Update Time States (CRITICAL for 32hr reset and 12AM reset)
-        self.lastActivityDate = Date()
-        self.currentStatusSetDate = Date()
-        
-        // 3. Set the UI Status
-        currentDayStatus = .freezed
-        
-        // 4. Update the Model (Metrics update automatically)
-        activityHistory.logActivity(on: Date(), status: .freezed)
-        
-        // 5. UI Mock Update (Forces current week calendar view to show new color)
-        if let index = calendarDays.firstIndex(where: { $0.isCurrent }) {
-            var tempDays = calendarDays
-            tempDays[index].status = .freezed
-            calendarDays = tempDays
-        }
-    }
-    
-    func getStatus(for date: Date) -> DayStatus {
-        if let color = activityHistory.colorForDate(date) {
-            if color == activityHistory.loggedColor { return .logged } // Use Model's internal colors
-            if color == activityHistory.freezedColor { return .freezed } // Use Model's internal colors
-        }
-        return .default
     }
     
     func setSameGoalAndDuration() {
@@ -242,40 +240,61 @@ class ActivityViewModel: ObservableObject {
         currentDayStatus = .default
     }
     
-    func handleMonthYearSelection(month: Int, year: Int) {
-        print("Historical view filter set to \(month)/\(year)")
+    // MARK: - Navigation
+    
+    func goToAllActivities() {
+        navPath.append(.allActivities)
     }
     
-    // MARK: - Button Enabling/Disabling Logic
+    func goToGoalUpdate() {
+        navPath.append(.goalUpdate)
+    }
     
-    var hasDayReset: Bool {
-        guard let setDate = currentStatusSetDate else {
-            return true
+    // MARK: - Helper Methods
+    
+    func getStatus(for date: Date) -> DayStatus {
+        CalendarMarksManager.getStatus(for: date)
+    }
+    
+    private func updateActivityHistory() {
+        // Update the ActivityHistory object from UserDefaults
+        var loggedDates: [Date: Color] = [:]
+        
+        let loggedSet = CalendarMarksManager.getLoggedDates()
+        for timestamp in loggedSet {
+            let date = Date(timeIntervalSince1970: timestamp)
+            loggedDates[date] = activityHistory.loggedColor
         }
         
-        let calendar = Calendar.current
-        let startOfToday = calendar.startOfDay(for: Date())
-        let startOfSetDay = calendar.startOfDay(for: setDate)
+        let freezedSet = CalendarMarksManager.getFreezedDates()
+        for timestamp in freezedSet {
+            let date = Date(timeIntervalSince1970: timestamp)
+            loggedDates[date] = activityHistory.freezedColor
+        }
         
-        return startOfToday > startOfSetDay
+        activityHistory.loggedDates = loggedDates
     }
     
-    // Testing feature - simulate different days
+    private func saveSession() {
+        if let context = modelContext, let session = currentSession {
+            try? context.save()
+        }
+    }
+    
+    // For testing: simulate different dates
     var simulatedDate: Date? = nil
-    private let calendar1 = Calendar.current
-
+    
     func advanceToNextDay() {
         let baseDate = simulatedDate ?? Date()
-        simulatedDate = calendar1.date(byAdding: .day, value: 1, to: baseDate)
+        simulatedDate = Calendar.current.date(byAdding: .day, value: 1, to: baseDate)
     }
     
     func goToPreviousDay() {
         let baseDate = simulatedDate ?? Date()
-        simulatedDate = calendar1.date(byAdding: .day, value: -1, to: baseDate)
+        simulatedDate = Calendar.current.date(byAdding: .day, value: -1, to: baseDate)
     }
     
     func resetToRealDate() {
         simulatedDate = nil
     }
 }
-
