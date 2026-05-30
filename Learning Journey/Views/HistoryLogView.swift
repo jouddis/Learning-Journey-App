@@ -4,6 +4,8 @@
 //
 //  Created by Joud Almashgari on 24/10/2025.
 //
+
+
 import SwiftUI
 
 struct HistoryLogView: View {
@@ -17,21 +19,22 @@ struct HistoryLogView: View {
     init(viewModel: ActivityViewModel) {
         self.viewModel = viewModel
 
-        // Start from January of the year the user first joined.
-        // Falls back to the current year if no session exists yet.
+        let cal = Calendar(identifier: .gregorian)
+
+        // Start from January of the year the user first joined
         let joinYear: Int = {
             if let startDate = viewModel.currentSession?.startDate {
-                return Calendar.current.component(.year, from: startDate)
+                return cal.component(.year, from: startDate)
             }
-            return Calendar.current.component(.year, from: Date())
+            return cal.component(.year, from: Date())
         }()
-
-        let cal = Calendar(identifier: .gregorian)
         let januaryOfJoinYear = cal.date(from: DateComponents(year: joinYear, month: 1, day: 1))!
 
-        // End at the current month — calendar grows naturally as time passes.
-        // No future months are shown.
-        self.months = HistoryLogView.buildMonths(from: januaryOfJoinYear, to: Date())
+        // End at June 30 of the following year so users can plan ahead
+        let nextYear = cal.component(.year, from: Date()) + 1
+        let endOfFirstHalfNextYear = cal.date(from: DateComponents(year: nextYear, month: 6, day: 30))!
+
+        self.months = HistoryLogView.buildMonths(from: januaryOfJoinYear, to: endOfFirstHalfNextYear)
     }
 
     private static func buildMonths(from start: Date, to end: Date) -> [Date] {
@@ -60,7 +63,6 @@ struct HistoryLogView: View {
                 .padding(.vertical, 12)
             }
             .onAppear {
-                // Always open scrolled to the current month
                 let currentMonth = Calendar.current.date(
                     from: Calendar.current.dateComponents([.year, .month], from: Date())
                 )!
@@ -133,14 +135,12 @@ private struct MonthLogSection: View {
                     ZStack {
                         if let day = cell.day, let date = cell.date {
                             if let color = history.colorForDate(date) {
-                                // Logged or frozen — circle matches CalendarView's 44pt size
                                 let isLogged = color == history.loggedColor
                                 Circle().fill(color).frame(width: 44, height: 44)
                                 Text("\(day)")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(isLogged ? Color.orange : Color(.primaryBlue))
                             } else if Calendar.current.isDateInToday(date) {
-                                // Today — orange circle, matching CalendarView
                                 Circle().fill(Color.orange).frame(width: 44, height: 44)
                                 Text("\(day)").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                             } else {

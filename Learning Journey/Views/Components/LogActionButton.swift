@@ -33,7 +33,7 @@ struct LogActionButton: View {
         switch viewModel.currentDayStatus {
         case .default: return "Log as Learned"
         case .logged:  return "Learned Today"   // FIX: back to one line, no truncation with ZStack
-        case .freezed: return "Day Freezed"
+        case .freezed: return "Day\nFreezed"
         }
     }
 

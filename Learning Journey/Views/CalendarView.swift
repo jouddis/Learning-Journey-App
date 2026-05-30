@@ -11,7 +11,6 @@ struct CalendarView: View {
     @ObservedObject var activityViewModel: ActivityViewModel
     @StateObject private var viewModel: CalendarViewModel
 
-    
     @State private var showMonthPicker = false
     @State private var pickedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var pickedYear: Int  = Calendar.current.component(.year,  from: Date())
@@ -47,11 +46,9 @@ struct CalendarView: View {
         .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5)
     }
 
-    
     private var header: some View {
         HStack {
             Button {
-                
                 pickedMonth = viewModel.displayedMonth
                 pickedYear  = viewModel.displayedYear
                 showMonthPicker = true
@@ -65,12 +62,9 @@ struct CalendarView: View {
                 }
                 .foregroundColor(.white)
             }
-           
             .popover(isPresented: $showMonthPicker, arrowEdge: .top) {
                 VStack(spacing: 16) {
                     HStack(spacing: 0) {
-
-                        
                         Picker("Month", selection: $pickedMonth) {
                             ForEach(Array((DateFormatter().monthSymbols ?? []).enumerated()), id: \.offset) { index, name in
                                 Text(name).tag(index + 1)
@@ -79,7 +73,6 @@ struct CalendarView: View {
                         .pickerStyle(.wheel)
                         .frame(maxWidth: .infinity)
 
-                        // Year wheel
                         let currentYear = Calendar.current.component(.year, from: Date())
                         Picker("Year", selection: $pickedYear) {
                             ForEach(2000...(currentYear + 10), id: \.self) { year in
@@ -90,12 +83,8 @@ struct CalendarView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .labelsHidden()
-                    .onChange(of: pickedMonth) { _, _ in
-                        viewModel.updateMonthYear(month: pickedMonth, year: pickedYear)
-                    }
-                    .onChange(of: pickedYear) { _, _ in
-                        viewModel.updateMonthYear(month: pickedMonth, year: pickedYear)
-                    }
+                    .onChange(of: pickedMonth) { _, _ in viewModel.updateMonthYear(month: pickedMonth, year: pickedYear) }
+                    .onChange(of: pickedYear)  { _, _ in viewModel.updateMonthYear(month: pickedMonth, year: pickedYear) }
                 }
                 .presentationCompactAdaptation(.popover)
                 .padding()
@@ -115,7 +104,6 @@ struct CalendarView: View {
         .padding(.top, 10)
     }
 
-    
     private var weekDays: some View {
         HStack(spacing: 10) {
             ForEach(viewModel.weekDates, id: \.self) { date in
@@ -123,11 +111,13 @@ struct CalendarView: View {
                 let isToday   = Calendar.current.isDateInToday(date)
                 let dayStatus = activityViewModel.getStatus(for: date)
 
+                // FIX: was Color.white.opacity(-1/100) which is a nonsensical negative opacity.
+                // .clear is the correct and readable way to express "no fill".
                 let fillColor: Color = {
-                    if dayStatus == .logged  { return activityViewModel.activityHistory.loggedColor  }
+                    if dayStatus == .logged  { return activityViewModel.activityHistory.loggedColor }
                     if dayStatus == .freezed { return activityViewModel.activityHistory.freezedColor }
-                    if isToday              { return Color.orange }
-                    return .white.opacity(-1/100)
+                    if isToday              { return .orange }
+                    return .clear
                 }()
 
                 VStack {
@@ -148,7 +138,6 @@ struct CalendarView: View {
         }
     }
 
-   
     private var metricsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Learning \(activityViewModel.currentGoalTopic)")
